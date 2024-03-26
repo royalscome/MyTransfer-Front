@@ -1,0 +1,43 @@
+{
+  "productName": "MyTransfer",
+  "appId": "wy.MyTransfer.f.electron",
+  "copyright": "Copyright © 2024-present weiyang",
+  "compression": "maximum",
+  "asar": true,
+  "directories": {
+    "output": "release/${version}"
+  },
+  "extraResources": [
+    {
+      "from": "./resource",
+      "to": "resource"
+    }
+  ],
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "perMachine": true,
+    "deleteAppDataOnUninstall": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "MyTransfer"
+  },
+  "win": {
+    "icon": "/resource/favicon.ico",
+    "artifactName": "${productName}-v${version}-${platform}-${arch}-setup.${ext}",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "mac": {
+    "icon": "",
+    "artifactName": "${productName}-v${version}-${platform}-${arch}-setup.${ext}"
+  },
+  "linux": {
+    "icon": "",
+    "artifactName": "${productName}-v${version}-${platform}-${arch}-setup.${ext}"
+  }
+}
