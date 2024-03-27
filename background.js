@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-unused-vars
-const { Certificate } = require("crypto");
 const { app, BrowserWindow, protocol, ipcMain } = require("electron");
 // eslint-disable-next-line no-unused-vars
 const { join, resolve, dirname } = require("path");
@@ -7,7 +5,6 @@ const { join, resolve, dirname } = require("path");
 const { exec, spawn } = require("child_process");
 // eslint-disable-next-line no-unused-vars
 const fs = require("fs");
-// const treeKill = require("tree-kill");
 protocol.registerSchemesAsPrivileged([{ scheme: "app", privileges: { secure: true, standard: true } }]);
 // 屏蔽安全警告 // ectron Security Warning (Insecure Content-Security-Policy)
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
@@ -93,6 +90,8 @@ const createWindow = async () => {
     width: 1024,
     height: 768,
     show: false,
+    resizable: false,
+    maximizable: false,
     webPreferences: {
       webSecurity: false,
       enableRemoteModule: true,
@@ -103,7 +102,7 @@ const createWindow = async () => {
   });
   win.on("ready-to-show", () => {
     win.show();
-    win.maximize();
+    // win.maximize();
   });
   let isQuitting = false;
 
@@ -126,6 +125,24 @@ const createWindow = async () => {
   win.on("closed", () => {
     app.quit();
   });
+  // 监听网络状态变化
+  ipcMain.on("check-online-status", event => {
+    event.returnValue = navigator.onLine;
+  });
+
+  // 监听网络连接状态变化
+  app.on("online", () => {
+    console.log("Online");
+    // 在这里执行在线时的操作
+    win.webContents.send("online-status-changed", true);
+  });
+
+  app.on("offline", () => {
+    console.log("Offline");
+    // 在这里执行离线时的操作
+    win.webContents.send("online-status-changed", false);
+  });
+
   // 加载vue url视本地环境而定，如http://localhost:5173     //
   // win.loadURL('http://localhost:3000')
   // development模式
@@ -145,12 +162,6 @@ const createWindow = async () => {
     // win.loadFile(join(__dirname, "../index.html"));
   }
 };
-app.commandLine.appendSwitch("--ignore-certificate-errors", "true");
-// eslint-disable-next-line no-unused-vars
-app.on("certificate-error", (event, webContents, url, error, Certificate, callback) => {
-  event.preventDefault();
-  callback(true);
-});
 app.whenReady().then(() => {
   createWindow();
   app.on("activate", () => {
