@@ -2,7 +2,7 @@
  * @Date: 2024-03-26 21:38:43
  * @Author: weiyang
  * @LastEditors: weiyang
- * @LastEditTime: 2024-03-27 22:19:05
+ * @LastEditTime: 2024-04-01 22:13:35
  * @FilePath: /MyTransfer-front/src/App.vue
 -->
 <template>
@@ -27,8 +27,11 @@
 
 <script setup>
 import { ref } from "vue";
+import WS from "@/utils/websocket";
 const { ipcRenderer } = require("electron");
 const visible = ref(false);
+// eslint-disable-next-line no-unused-vars
+let ws = null;
 
 // 监听electron主进程发送来的close事件
 ipcRenderer.on("confirm-close", () => {
@@ -39,6 +42,14 @@ ipcRenderer.on("confirm-close", () => {
 const closeWindow = () => {
   ipcRenderer.send("can-close");
 };
+
+const createWebSocket = () => {
+  ws = new WS({
+    ip: "127.0.0.1:2000/ws",
+    id: "123"
+  });
+};
+createWebSocket();
 </script>
 
 <style scoped lang="scss">
