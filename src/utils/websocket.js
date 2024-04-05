@@ -9,6 +9,7 @@ class WS {
   timeout = 3000;
   constructor(configuration) {
     this.configuration = configuration;
+    // eslint-disable-next-line no-unused-vars
     const { ip, id } = this.configuration;
     this.url = `ws://${ip}`;
     this.onOpenCallbacks = [];
