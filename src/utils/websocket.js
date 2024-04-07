@@ -36,10 +36,7 @@ class WS {
       this.scoket.send(
         JSON.stringify({
           send_name: this.configuration.id,
-          client_type: "0",
-          message: {
-            data: "heartCheck"
-          }
+          type: "heartCheck"
         })
       );
       if (this.num === 0) {
@@ -80,14 +77,14 @@ class WS {
     const that = this;
     this.scoket.onclose = function (event) {
       console.log("close", event);
-      this.onCloseCallbacks?.forEach(callback => {
+      that.onCloseCallbacks?.forEach(callback => {
         callback(event);
       });
       that.reconnect();
     };
     this.scoket.onerror = function (event) {
       console.log("error", event);
-      this.onErrorCallbacks?.forEach(callback => {
+      that.onErrorCallbacks?.forEach(callback => {
         callback(event);
       });
       that.reconnect();
@@ -96,12 +93,12 @@ class WS {
       console.log("open", event);
       // 开始心跳检测
       that.start();
-      this.onOpenCallbacks?.forEach(callback => {
+      that.onOpenCallbacks?.forEach(callback => {
         callback(event);
       });
     };
     this.scoket.onmessage = function (event) {
-      this.onMessageCallbacks?.forEach(callback => {
+      that.onMessageCallbacks?.forEach(callback => {
         callback(event);
       });
       that.start();

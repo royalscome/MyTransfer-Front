@@ -1,4 +1,4 @@
-const { app, BrowserWindow, protocol, ipcMain } = require("electron");
+const { app, BrowserWindow, protocol, ipcMain, dialog } = require("electron");
 // eslint-disable-next-line no-unused-vars
 const { join, resolve, dirname } = require("path");
 // eslint-disable-next-line no-unused-vars
@@ -174,4 +174,10 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+// eslint-disable-next-line no-unused-vars
+ipcMain.handle("open-directory-dialog", async event => {
+  return await dialog.showOpenDialog({
+    properties: ["openDirectory"]
+  });
 });

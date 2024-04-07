@@ -2,7 +2,7 @@
  * @Date: 2024-03-26 21:38:43
  * @Author: weiyang
  * @LastEditors: weiyang
- * @LastEditTime: 2024-04-05 21:12:41
+ * @LastEditTime: 2024-04-07 20:15:34
  * @FilePath: /MyTransfer-front/src/App.vue
 -->
 <template>
@@ -21,7 +21,13 @@
       ></video>
     </header>
     <main class="container-main">
-      <div class="device-cell" v-for="(item, index) in deviceList" :key="index" @dragover.prevent @drop="handleDrop">
+      <div
+        class="device-cell"
+        v-for="(item, index) in deviceList"
+        :key="index"
+        @dragover.prevent
+        @drop="handleDrop($event, item)"
+      >
         <span>ip: {{ item.ip }}</span>
         <span>状态：{{ item.status ? "在线" : "离线" }}</span>
       </div>
@@ -40,17 +46,35 @@
       </div>
     </template>
   </el-dialog>
+  <el-dialog
+    v-model="confirmVisible"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+    title="消息"
+    width="500"
+  >
+    <span>是否接受 {{ fileName }} 文件？</span>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="refuseFile">拒绝</el-button>
+        <el-button type="primary" @click="acceptFile"> 接受 </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 import WS from "@/utils/websocket";
 import searchVideo from "@/assets/video/search_loading.mp4";
-import { getDeviceApi } from "@/api";
+import { getDeviceApi, sendMessageApi } from "@/api";
 const { ipcRenderer } = require("electron");
 const visible = ref(false);
 const videoRef = ref(null);
 const deviceList = ref([]);
+const fileName = ref("");
+const confirmVisible = ref(false);
+let nowDropItem = null;
 // eslint-disable-next-line no-unused-vars
 let ws = null;
 
@@ -70,6 +94,15 @@ const createWebSocket = () => {
     ip: "127.0.0.1:1999/ws",
     id: "123"
   });
+  ws.onMessage(e => {
+    // console.log(e);
+    const data = JSON.parse(e.data);
+    if (data.type === "confirm") {
+      // console.log(data);
+      fileName.value = data.name;
+      confirmVisible.value = true;
+    }
+  });
 };
 // createWebSocket();
 const handleVideoEnded = () => {
@@ -78,27 +111,88 @@ const handleVideoEnded = () => {
 
 const getDevice = () => {
   getDeviceApi().then(res => {
-    console.log(res);
-    deviceList.value = [...res.data.device_list, ...res.data.device_list];
+    // console.log(res);
+    deviceList.value = res.data.device_list;
   });
 };
 
-const handleDrop = e => {
+const handleDrop = (e, item) => {
+  nowDropItem = item;
   e.preventDefault();
   const { files } = e.dataTransfer;
   if (files.length > 0) {
     // eslint-disable-next-line prefer-destructuring
-    const { path } = files[0];
-    console.log(path);
+    const { path, name } = files[0];
+    console.log(path, name, item);
+    const message = JSON.stringify({
+      type: 0,
+      message: JSON.stringify({
+        type: "confirm",
+        name,
+        path
+      })
+    });
     // 在这里你可以发送文件
+    const data = {
+      address: item.ip + ":" + item.port,
+      message
+    };
+    // eslint-disable-next-line no-unused-vars
+    sendMessageApi(data).then(res => {
+      // console.log(res);
+    });
+    ws.send({
+      type: "start",
+      path
+    });
   }
+};
+
+const refuseFile = () => {
+  const message = JSON.stringify({
+    type: 2,
+    message: ""
+  });
+  const data = {
+    address: nowDropItem.ip + ":" + nowDropItem.port,
+    message
+  };
+  sendMessageApi(data);
+  confirmVisible.value = false;
+};
+// 同意接收文件，并且同时选择文件路径
+const acceptFile = async () => {
+  const result = await ipcRenderer.invoke("open-directory-dialog");
+  if (result.canceled) {
+    console.log("User canceled the dialog");
+  } else {
+    console.log("Selected directory:", result.filePaths[0]);
+    // 在这里你可以使用选择的路径
+  }
+  const message = JSON.stringify({
+    type: 1,
+    message: ""
+  });
+  const data = {
+    address: nowDropItem.ip + ":" + nowDropItem.port,
+    message
+  };
+  sendMessageApi(data);
+  ws.send({
+    type: "keep",
+    path: result.filePaths[0] + "/" + fileName.value
+  });
+  // confirmVisible.value = false;
 };
 
 onMounted(() => {
   getDevice();
   videoRef.value.play();
+  setTimeout(() => {
+    createWebSocket();
+  }, 2000);
   setInterval(() => {
-    getDevice();
+    // getDevice();
   }, 5000);
 });
 </script>
